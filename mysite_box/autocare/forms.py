@@ -15,11 +15,20 @@ class RegisterForm(UserCreationForm):
     email = forms.EmailField(label='Correo Electrónico')
     first_name = forms.CharField(label='Nombre')
     last_name = forms.CharField(label='Apellido')
-    group = forms.ModelChoiceField(queryset=Group.objects.filter(name__in=['Mecanicos', 'Particulares']), initial=Group.objects.get(name='Particulares'), required=True, label='Tipo de Uso: ')
+    group = forms.ModelChoiceField(queryset=Group.objects.none(), required=True, label='Tipo de Uso: ')
 
     class Meta:
         model = User
         fields = ['email', 'first_name', 'last_name', 'password1', 'password2']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Cargar los grupos solo cuando se inicializa el formulario
+        self.fields['group'].queryset = Group.objects.filter(name__in=['Mecanicos', 'Particulares'])
+        try:
+            self.fields['group'].initial = Group.objects.get(name='Particulares')
+        except Group.DoesNotExist:
+            self.fields['group'].initial = None
     
     def clean_email(self):
         email_field = self.cleaned_data['email']
@@ -46,18 +55,6 @@ class VehicleForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(VehicleForm, self).__init__(*args, **kwargs)
         self.fields['car_mechanic'].queryset = User.objects.filter(groups__name='Mecanicos')
-
-'''
-class VehicleForm(forms.ModelForm):
-    class Meta:
-        model = Vehicle
-        fields = ['plate', 'brand', 'moddel', 'year', 'color', 'mileage', 'car_mechanic']
-
-    def __init__(self, *args, **kwargs):
-        super(VehicleForm, self).__init__(*args, **kwargs)
-        mecanicos_group = Group.objects.get(name='Mecanicos')
-        self.fields['car_mechanic'].queryset = User.objects.filter(groups=mecanicos_group)
-'''
 
 # Formulario para editar la información de los usuarios. Como estoy usando
 # dos tablas, una parte va a impactar en User y otra parte en Profile
